@@ -13,6 +13,8 @@
             background-color: #222;
             color: white;
             margin: 50px;
+            overflow-x: hidden;
+            max-width: 100vw; /* Prevent horizontal scrolling */
         }
         h1 { font-size: 24px; }
         #scene-container { width: 100%; height: 300px; margin: auto; }
@@ -67,24 +69,31 @@
     <div class="car" onclick="openCar('models/camaro.glb', 'Camaro')">Camaro (Unlocked)</div>
     <div class="car locked" id="car2" onclick="unlockCar(2)">Mercedes G63 (Locked)
         <div class="ads-required" id="ads-car2">Watch 2 ads</div>
+        <div id="timer-car2" class="ads-required"></div>
     </div>
     <div class="car locked" id="car3" onclick="unlockCar(3)">Mercedes SLS (Locked)
         <div class="ads-required" id="ads-car3">Watch 3 ads</div>
+        <div id="timer-car3" class="ads-required"></div>
     </div>
     <div class="car locked" id="car4" onclick="unlockCar(4)">P911 GT (Locked)
         <div class="ads-required" id="ads-car4">Watch 5 ads</div>
+        <div id="timer-car4" class="ads-required"></div>
     </div>
     <div class="car locked" id="car5" onclick="unlockCar(5)">G-Wagen (Locked)
         <div class="ads-required" id="ads-car5">Watch 4 ads</div>
+        <div id="timer-car5" class="ads-required"></div>
     </div>
     <div class="car locked" id="car6" onclick="unlockCar(6)">Bugatti Veyron (Locked)
         <div class="ads-required" id="ads-car6">Watch 10 ads</div>
+        <div id="timer-car6" class="ads-required"></div>
     </div>
     <div class="car locked" id="car7" onclick="unlockCar(7)">McLaren Senna (Locked)
         <div class="ads-required" id="ads-car7">Watch 9 ads</div>
+        <div id="timer-car7" class="ads-required"></div>
     </div>
     <div class="car locked" id="car8" onclick="unlockCar(8)">Audi R8 (Locked)
         <div class="ads-required" id="ads-car8">Watch 7 ads</div>
+        <div id="timer-car8" class="ads-required"></div>
     </div>
 </div>
 
@@ -159,17 +168,34 @@
         Object.keys(unlockedCars).forEach(car => {
             let carElement = document.getElementById(car);
             let adsElement = document.getElementById(`ads-${car}`);
+            let timerElement = document.getElementById(`timer-${car}`);
 
             if (unlockedCars[car]) {
                 carElement.classList.remove("locked");
                 carElement.innerText = carElement.innerText.replace("(Locked)", "(Unlocked)");
                 if (adsElement) adsElement.style.display = "none";
+                if (timerElement) timerElement.style.display = "none";
             } else {
                 let adsRequired = car === "car2" ? 2 : car === "car3" ? 3 : car === "car4" ? 5 : car === "car5" ? 4 : car === "car6" ? 10 : car === "car7" ? 9 : 7;
                 let adsLeft = adsRequired - adsWatched[car];
                 if (adsElement) adsElement.innerText = `Watch ${adsLeft} ads`;
+                if (timerElement) startCountdown(car, adsLeft);
             }
         });
+    }
+
+    function startCountdown(car, adsLeft) {
+        let timerElement = document.getElementById(`timer-${car}`);
+        let countdown = adsLeft;
+
+        const interval = setInterval(() => {
+            timerElement.innerText = `${countdown} ads remaining`;
+            countdown--;
+            if (countdown < 0) {
+                clearInterval(interval);
+                timerElement.innerText = "";
+            }
+        }, 1000);
     }
 
     function resetGame() {
@@ -179,7 +205,7 @@
 
     function openCar(modelPath, carName) {
         localStorage.setItem('selectedCar', modelPath);
-        window.location.href = 'game.html';
+        window.location.href = 'game.html'; // Ensure game.html is in the same directory or adjust path
     }
 
     let scene, camera, renderer, loader;
@@ -220,4 +246,4 @@
 </script>
 
 </body>
-</html>
+    </html>
