@@ -44,7 +44,22 @@
     
     <div class="car">🚗💨</div>
 
+    <!-- Audio element for background music -->
+    <audio id="background-music" autoplay loop>
+        <source src="musicnote.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
     <script>
+        // Play background music when the page loads
+        window.onload = function() {
+            const audio = document.getElementById('background-music');
+            audio.play().catch(error => {
+                console.log('Autoplay was prevented. Please interact with the page to play the audio.');
+            });
+        };
+
+        // Redirect to manu.html after 5 seconds
         setTimeout(function() {
             window.location.href = "manu.html"; // Redirect to manu.html after animation
         }, 5000); // Wait 5 seconds before redirecting
