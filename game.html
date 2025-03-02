@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Racing Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 48px;
+            text-align: center;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameOverMessage" class="game-over" style="display: none;">Game Over!</div>
+
+    <!-- Audio for other cars -->
+    <audio id="carSound" src="sound1.mp4" loop></audio>
+
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r146/three.min.js"></script>
+    <!-- GLTFLoader for loading 3D models -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(0, 1, 1).normalize();
+        scene.add(light);
+
+        // Game variables
+        let playerCar;
+        let otherCars = [];
+        let policeCar = null;
+        let gameSpeed = 2;
+        let isPoliceChasing = false;
+        let collisions = 0;
+        let isGameOver = false;
+
+        // Audio element
+        const carSound = document.getElementById("carSound");
+
+        // Controls object (will be populated from controls.html)
+        const controls = {
+            up: "ArrowUp",
+            down: "ArrowDown"
+        };
+
+        // Fetch controls from controls.html
+        async function fetchControls() {
+            try {
+                const response = await fetch("controls.html");
+                const text = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, "text/html");
+                const controlScript = doc.querySelector("script#controls");
+                if (controlScript) {
+                    eval(controlScript.textContent); // Execute the script to populate controls
+                }
+            } catch (error) {
+                console.error("Failed to fetch controls:", error);
+            }
+        }
+
+        // Load 3D models
+        const loader = new THREE.GLTFLoader();
+
+        // Load player car
+        loader.load("Bentley.zip", (gltf) => {
+            playerCar = gltf.scene;
+            playerCar.scale.set(0.5, 0.5, 0.5);
+            playerCar.position.set(0, 0, 0);
+            scene.add(playerCar);
+        });
+
+        // Load police car
+        loader.load("batmobile.7z", (gltf) => {
+            policeCar = gltf.scene;
+            policeCar.scale.set(0.5, 0.5, 0.5);
+            policeCar.position.set(0, -10, 0); // Offscreen initially
+            scene.add(policeCar);
+        });
+
+        // Load other cars
+        const carModels = [
+            "mclarensenna.zip",
+            "Mercedes gas.zip",
+            "audir8spyder.rar",
+            "audir8.rar",
+            "aventador.zip",
+            "mercedessls.zip",
+            "ferrarilaferari.rar",
+            "buggativeyron.zip",
+            "Cameron.zip",
+            "buggati.zip"
+        ];
+
+        carModels.forEach((model) => {
+            loader.load(model, (gltf) => {
+                const car = gltf.scene;
+                car.scale.set(0.5, 0.5, 0.5);
+                car.position.set(Math.random() * 10 - 5, -10, 0); // Offscreen initially
+                otherCars.push(car);
+                scene.add(car);
+            });
+        });
+
+        // Camera position
+        camera.position.set(0, 5, 10);
+        camera.lookAt(0, 0, 0);
+
+        // Function to create other cars
+        function createOtherCar() {
+            if (otherCars.length === 0) return;
+
+            const laneWidth = 5;
+            const lane1 = -2.5; // Left lane
+            const lane2 = 2.5; // Right lane
+            const x = Math.random() < 0.5 ? lane1 : lane2; // Randomly choose a lane
+            const y = -10;
+            const speed = Math.random() * 3 + 2;
+
+            const car = otherCars[Math.floor(Math.random() * otherCars.length)].clone();
+            car.position.set(x, y, 0);
+            scene.add(car);
+            otherCars.push(car);
+        }
+
+        // Function to check collision between two cars
+        function checkCollision(car1, car2) {
+            const distance = car1.position.distanceTo(car2.position);
+            return distance < 2; // Adjust collision distance as needed
+        }
+
+        // Function to handle game over
+        function gameOver() {
+            isGameOver = true;
+            document.getElementById("gameOverMessage").style.display = "block";
+            carSound.pause();
+
+            // Save data to local storage
+            localStorage.setItem("collisions", collisions);
+            localStorage.setItem("gameOver", true);
+        }
+
+        // Function to update game state
+        function update() {
+            if (isGameOver) return; // Stop the game loop if game is over
+
+            // Move player car
+            if (playerCar) {
+                playerCar.position.y += playerCar.speed * 0.1;
+            }
+
+            // Move other cars
+            for (let i = 0; i < otherCars.length; i++) {
+                otherCars[i].position.y -= otherCars[i].speed * 0.1;
+                if (otherCars[i].position.y < -10) {
+                    scene.remove(otherCars[i]);
+                    otherCars.splice(i, 1);
+                    i--;
+                }
+            }
+
+            // Spawn new cars
+            if (Math.random() < 0.02) {
+                createOtherCar();
+            }
+
+            // Check for police chase
+            if (playerCar && playerCar.speed >= 100 && !isPoliceChasing) {
+                isPoliceChasing = true;
+                if (policeCar) {
+                    policeCar.position.set(Math.random() < 0.5 ? -2.5 : 2.5, -10, 0);
+                }
+            }
+
+            // Move police car
+            if (policeCar && isPoliceChasing) {
+                policeCar.position.y -= policeCar.speed * 0.1;
+
+                // Block player but leave space
+                if (policeCar.position.y > 0) {
+                    if (policeCar.position.x < playerCar.position.x) {
+                        policeCar.position.x = Math.min(playerCar.position.x - 2, policeCar.position.x + 0.1);
+                    } else {
+                        policeCar.position.x = Math.max(playerCar.position.x + 2, policeCar.position.x - 0.1);
+                    }
+                }
+
+                if (policeCar.position.y < -10) {
+                    policeCar.position.set(0, -10, 0); // Reset position
+                    isPoliceChasing = false;
+                }
+            }
+
+            // Check for collisions
+            if (playerCar) {
+                for (let i = 0; i < otherCars.length; i++) {
+                    if (checkCollision(playerCar, otherCars[i])) {
+                        if (isPoliceChasing) {
+                            gameOver();
+                            return;
+                        } else if (playerCar.speed >= 100) {
+                            gameOver();
+                            return;
+                        } else {
+                            collisions++;
+                            if (collisions >= 3) {
+                                gameOver();
+                                return;
+                            }
+                            scene.remove(otherCars[i]);
+                            otherCars.splice(i, 1);
+                            i--;
+                        }
+                    }
+                }
+            }
+
+            // Play sound if other cars are on the screen
+            if (otherCars.length > 0 && carSound.paused) {
+                carSound.play();
+            } else if (otherCars.length === 0 && !carSound.paused) {
+                carSound.pause();
+            }
+
+            // Render the scene
+            renderer.render(scene, camera);
+
+            // Request next frame
+            requestAnimationFrame(update);
+        }
+
+        // Handle keyboard input
+        document.addEventListener("keydown", (e) => {
+            if (isGameOver) return; // Ignore input if game is over
+            if (e.key === controls.up && playerCar.speed < 150) {
+                playerCar.speed += 1;
+            } else if (e.key === controls.down && playerCar.speed > 0) {
+                playerCar.speed -= 1;
+            }
+        });
+
+        // Fetch controls and start the game
+        fetchControls().then(() => {
+            update();
+        });
+    </script>
+</body>
+      </html>
