@@ -61,22 +61,36 @@
     <a href="index.html" class="back-btn">Back to Menu</a>
 
     <script>
+        // Function to handle control selection
         function selectControl(controlType) {
+            // Save the selected control type to localStorage
             localStorage.setItem('selectedControl', controlType);
+
+            // Update the UI to show the selected control
             updateSelection();
+
             // Redirect to game.html after selection
             window.location.href = "game.html";
         }
 
+        // Function to update the selected control UI
         function updateSelection() {
+            // Remove the "selected" class from both options
             document.getElementById("tiltControl").classList.remove("selected");
             document.getElementById("arrowControl").classList.remove("selected");
 
+            // Get the selected control from localStorage
             let selectedControl = localStorage.getItem('selectedControl');
-            let selectedId = selectedControl === "tilt" ? "tiltControl" : "arrowControl";
-            document.getElementById(selectedId).classList.add("selected");
+
+            // Add the "selected" class to the currently selected option
+            if (selectedControl === "tilt") {
+                document.getElementById("tiltControl").classList.add("selected");
+            } else if (selectedControl === "arrow") {
+                document.getElementById("arrowControl").classList.add("selected");
+            }
         }
 
+        // Update the UI when the page loads
         updateSelection();
     </script>
 
