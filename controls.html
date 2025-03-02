@@ -61,17 +61,18 @@
     <a href="index.html" class="back-btn">Back to Menu</a>
 
     <script>
-        let selectedControl = localStorage.getItem('selectedControl') || 'tilt';
-
         function selectControl(controlType) {
             localStorage.setItem('selectedControl', controlType);
             updateSelection();
+            // Redirect to game.html after selection
+            window.location.href = "game.html";
         }
 
         function updateSelection() {
             document.getElementById("tiltControl").classList.remove("selected");
             document.getElementById("arrowControl").classList.remove("selected");
 
+            let selectedControl = localStorage.getItem('selectedControl');
             let selectedId = selectedControl === "tilt" ? "tiltControl" : "arrowControl";
             document.getElementById(selectedId).classList.add("selected");
         }
