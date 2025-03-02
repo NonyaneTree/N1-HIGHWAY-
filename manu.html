@@ -214,8 +214,11 @@
     }
 
     function openCar(modelPath, carName) {
-        localStorage.setItem('selectedCar', modelPath);
-        window.location.href = 'game.html'; // Ensure game.html is in the same directory or adjust path
+    // Save the selected car to localStorage
+    localStorage.setItem('selectedCar', modelPath);
+
+    // Redirect to game.html
+    window.location.href = "game.html";
     }
 
     let scene, camera, renderer, loader;
