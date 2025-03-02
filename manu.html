@@ -64,12 +64,27 @@
 <div id="scene-container"></div>
 
 <div class="cars">
-    <div class="car" onclick="loadCar('models/camaro.glb')">Camaro (Unlocked)</div>
+    <div class="car" onclick="openCar('models/camaro.glb', 'Camaro')">Camaro (Unlocked)</div>
     <div class="car locked" id="car2" onclick="unlockCar(2)">Mercedes G63 (Locked)
         <div class="ads-required" id="ads-car2">Watch 2 ads</div>
     </div>
     <div class="car locked" id="car3" onclick="unlockCar(3)">Mercedes SLS (Locked)
         <div class="ads-required" id="ads-car3">Watch 3 ads</div>
+    </div>
+    <div class="car locked" id="car4" onclick="unlockCar(4)">P911 GT (Locked)
+        <div class="ads-required" id="ads-car4">Watch 5 ads</div>
+    </div>
+    <div class="car locked" id="car5" onclick="unlockCar(5)">G-Wagen (Locked)
+        <div class="ads-required" id="ads-car5">Watch 4 ads</div>
+    </div>
+    <div class="car locked" id="car6" onclick="unlockCar(6)">Bugatti Veyron (Locked)
+        <div class="ads-required" id="ads-car6">Watch 10 ads</div>
+    </div>
+    <div class="car locked" id="car7" onclick="unlockCar(7)">McLaren Senna (Locked)
+        <div class="ads-required" id="ads-car7">Watch 9 ads</div>
+    </div>
+    <div class="car locked" id="car8" onclick="unlockCar(8)">Audi R8 (Locked)
+        <div class="ads-required" id="ads-car8">Watch 7 ads</div>
     </div>
 </div>
 
@@ -87,8 +102,8 @@
 </audio>
 
 <script>
-    let adsWatched = JSON.parse(localStorage.getItem('adsWatched')) || { car2: 0, car3: 0 };
-    let unlockedCars = JSON.parse(localStorage.getItem('unlockedCars')) || { car2: false, car3: false };
+    let adsWatched = JSON.parse(localStorage.getItem('adsWatched')) || { car2: 0, car3: 0, car4: 0, car5: 0, car6: 0, car7: 0, car8: 0 };
+    let unlockedCars = JSON.parse(localStorage.getItem('unlockedCars')) || { car2: false, car3: false, car4: false, car5: false, car6: false, car7: false, car8: false };
     let soundOn = true;
 
     function initializeGame() {
@@ -110,7 +125,7 @@
     function unlockCar(carNumber) {
         if (unlockedCars[`car${carNumber}`]) return;
 
-        let adsRequired = carNumber === 2 ? 2 : 3;
+        let adsRequired = carNumber === 2 ? 2 : carNumber === 3 ? 3 : carNumber === 4 ? 5 : carNumber === 5 ? 4 : carNumber === 6 ? 10 : carNumber === 7 ? 9 : 7;
 
         if (adsWatched[`car${carNumber}`] < adsRequired) {
             requestAd(carNumber);
@@ -123,7 +138,7 @@
 
     function requestAd(carNumber) {
         // Simulate requesting an ad using AdMob IDs
-        const adId = carNumber === 2 ? "ca-app-pub-7221396727211259/3501542569" : "ca-app-pub-7221396727211259/3501542569";
+        const adId = "ca-app-pub-7221396727211259/3501542569";
 
         // Simulate ad watching (you would replace this with actual ad logic)
         setTimeout(() => {
@@ -131,7 +146,7 @@
             localStorage.setItem('adsWatched', JSON.stringify(adsWatched));
             updateUI();
 
-            if (adsWatched[`car${carNumber}`] >= (carNumber === 2 ? 2 : 3)) {
+            if (adsWatched[`car${carNumber}`] >= (carNumber === 2 ? 2 : carNumber === 3 ? 3 : carNumber === 4 ? 5 : carNumber === 5 ? 4 : carNumber === 6 ? 10 : carNumber === 7 ? 9 : 7)) {
                 unlockedCars[`car${carNumber}`] = true;
                 alert(`Car ${carNumber} unlocked!`);
                 localStorage.setItem('unlockedCars', JSON.stringify(unlockedCars));
@@ -150,7 +165,7 @@
                 carElement.innerText = carElement.innerText.replace("(Locked)", "(Unlocked)");
                 if (adsElement) adsElement.style.display = "none";
             } else {
-                let adsRequired = car === "car2" ? 2 : 3;
+                let adsRequired = car === "car2" ? 2 : car === "car3" ? 3 : car === "car4" ? 5 : car === "car5" ? 4 : car === "car6" ? 10 : car === "car7" ? 9 : 7;
                 let adsLeft = adsRequired - adsWatched[car];
                 if (adsElement) adsElement.innerText = `Watch ${adsLeft} ads`;
             }
@@ -160,6 +175,11 @@
     function resetGame() {
         localStorage.clear();
         location.reload();
+    }
+
+    function openCar(modelPath, carName) {
+        localStorage.setItem('selectedCar', modelPath);
+        window.location.href = 'game.html';
     }
 
     let scene, camera, renderer, loader;
