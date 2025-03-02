@@ -60,62 +60,38 @@
         // Audio element
         const carSound = document.getElementById("carSound");
 
-        // Controls object (will be populated from controls.html)
-        const controls = {
-            up: "ArrowUp",
-            down: "ArrowDown"
-        };
-
-        // Fetch controls from controls.html
-        async function fetchControls() {
-            try {
-                const response = await fetch("controls.html");
-                const text = await response.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(text, "text/html");
-                const controlScript = doc.querySelector("script#controls");
-                if (controlScript) {
-                    eval(controlScript.textContent); // Execute the script to populate controls
-                }
-            } catch (error) {
-                console.error("Failed to fetch controls:", error);
-            }
-        }
-
         // Load 3D models
         const loader = new THREE.GLTFLoader();
 
+        // Fetch selected car from menu.html
+        async function fetchSelectedCar() {
+            try {
+                const response = await fetch("menu.html");
+                const text = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, "text/html");
+                const selectedCar = doc.querySelector("script#selectedCar").textContent.trim();
+                return selectedCar;
+            } catch (error) {
+                console.error("Failed to fetch selected car:", error);
+                return "Bentley.zip"; // Default car if fetching fails
+            }
+        }
+
         // Load player car
-        loader.load("Bentley.zip", (gltf) => {
-            playerCar = gltf.scene;
-            playerCar.scale.set(0.5, 0.5, 0.5);
-            playerCar.position.set(0, 0, 0);
-            scene.add(playerCar);
-        });
+        async function loadPlayerCar() {
+            const selectedCar = await fetchSelectedCar();
+            loader.load(selectedCar, (gltf) => {
+                playerCar = gltf.scene;
+                playerCar.scale.set(0.5, 0.5, 0.5);
+                playerCar.position.set(0, 0, 0);
+                scene.add(playerCar);
+            });
+        }
 
-        // Load police car
-        loader.load("batmobile.7z", (gltf) => {
-            policeCar = gltf.scene;
-            policeCar.scale.set(0.5, 0.5, 0.5);
-            policeCar.position.set(0, -10, 0); // Offscreen initially
-            scene.add(policeCar);
-        });
-
-        // Load other cars
-        const carModels = [
-            "mclarensenna.zip",
-            "Mercedes gas.zip",
-            "audir8spyder.rar",
-            "audir8.rar",
-            "aventador.zip",
-            "mercedessls.zip",
-            "ferrarilaferari.rar",
-            "buggativeyron.zip",
-            "Cameron.zip",
-            "buggati.zip"
-        ];
-
-        carModels.forEach((model) => {
+        // Load NPC cars
+        const npcCarModels = ["jeep.rar", "pickup old.rar", "bus.zip", "cybertruck.zip"];
+        function loadNpcCar(model) {
             loader.load(model, (gltf) => {
                 const car = gltf.scene;
                 car.scale.set(0.5, 0.5, 0.5);
@@ -123,14 +99,24 @@
                 otherCars.push(car);
                 scene.add(car);
             });
-        });
+        }
+
+        // Load police car
+        function loadPoliceCar() {
+            loader.load("batmobile.7z", (gltf) => {
+                policeCar = gltf.scene;
+                policeCar.scale.set(0.5, 0.5, 0.5);
+                policeCar.position.set(0, -10, 0); // Offscreen initially
+                scene.add(policeCar);
+            });
+        }
 
         // Camera position
         camera.position.set(0, 5, 10);
         camera.lookAt(0, 0, 0);
 
-        // Function to create other cars
-        function createOtherCar() {
+        // Function to create NPC cars
+        function createNpcCar() {
             if (otherCars.length === 0) return;
 
             const laneWidth = 5;
@@ -140,10 +126,8 @@
             const y = -10;
             const speed = Math.random() * 3 + 2;
 
-            const car = otherCars[Math.floor(Math.random() * otherCars.length)].clone();
-            car.position.set(x, y, 0);
-            scene.add(car);
-            otherCars.push(car);
+            const model = npcCarModels[Math.floor(Math.random() * npcCarModels.length)];
+            loadNpcCar(model);
         }
 
         // Function to check collision between two cars
@@ -172,7 +156,7 @@
                 playerCar.position.y += playerCar.speed * 0.1;
             }
 
-            // Move other cars
+            // Move NPC cars
             for (let i = 0; i < otherCars.length; i++) {
                 otherCars[i].position.y -= otherCars[i].speed * 0.1;
                 if (otherCars[i].position.y < -10) {
@@ -182,9 +166,9 @@
                 }
             }
 
-            // Spawn new cars
+            // Spawn new NPC cars
             if (Math.random() < 0.02) {
-                createOtherCar();
+                createNpcCar();
             }
 
             // Check for police chase
@@ -255,17 +239,32 @@
         // Handle keyboard input
         document.addEventListener("keydown", (e) => {
             if (isGameOver) return; // Ignore input if game is over
-            if (e.key === controls.up && playerCar.speed < 150) {
+            if (e.key === "ArrowUp" && playerCar.speed < 150) {
                 playerCar.speed += 1;
-            } else if (e.key === controls.down && playerCar.speed > 0) {
+            } else if (e.key === "ArrowDown" && playerCar.speed > 0) {
                 playerCar.speed -= 1;
             }
         });
 
-        // Fetch controls and start the game
-        fetchControls().then(() => {
-            update();
-        });
+        // Load assets and start the game
+        loadPlayerCar();
+        loadPoliceCar();
+        update();
+    </script>
+
+    <div id="controlsContainer"></div>
+    <script>
+        async function loadControls() {
+            try {
+                const response = await fetch("controls.html");
+                const text = await response.text();
+                document.getElementById("controlsContainer").innerHTML = text;
+            } catch (error) {
+                console.error("Failed to load controls:", error);
+            }
+        }
+
+        loadControls();
     </script>
 </body>
-      </html>
+</html>
