@@ -2,94 +2,271 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>XIO Assistant</title>
   <meta name="google-adsense-account" content="ca-pub-7221396727211259">
   <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; padding: 0; background: #eef1f5; font-family: 'Segoe UI', sans-serif; min-height: 100vh; overflow-y: auto; }
-    .chat-container { width: 100%; min-height: 100vh; display: flex; flex-direction: column; background: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
-    .header { background-color: #0066ff; color: white; padding: 15px 20px; font-size: 18px; font-weight: bold; flex-shrink: 0; }
-    #messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; -webkit-overflow-scrolling: touch; }
-    .msg { max-width: 85%; padding: 12px 15px; border-radius: 15px; line-height: 1.5; word-break: break-word; display: flex; align-items: flex-start; }
-    .msg img.xio-icon { width: 34px; height: 34px; margin-right: 8px; margin-top: 4px; flex-shrink: 0; }
-    .msg .pattern-img { max-width: 100%; max-height: 300px; height: auto; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; display: block; object-fit: contain; }
-    .user { align-self: flex-end; background: #d7ebff; color: #003366; border-top-right-radius: 0; }
-    .xio { align-self: flex-start; background: #f1f1f1; color: #222; border-top-left-radius: 0; }
+    * { 
+      box-sizing: border-box; 
+      -webkit-tap-highlight-color: transparent;
+    }
     
-    /* Combined Search Bar Styles */
+    html, body { 
+      margin: 0; 
+      padding: 0; 
+      background: #eef1f5; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      height: 100vh;
+      height: 100dvh; /* Dynamic viewport height for mobile */
+      width: 100vw;
+      overflow: hidden;
+    }
+    
+    .chat-container { 
+      width: 100%; 
+      height: 100%;
+      max-width: 100%;
+      display: flex; 
+      flex-direction: column; 
+      background: #fff; 
+      box-shadow: 0 0 10px rgba(0,0,0,0.05); 
+    }
+    
+    .header { 
+      background: linear-gradient(135deg, #0066ff 0%, #0052cc 100%);
+      color: white; 
+      padding: clamp(12px, 3vw, 18px) clamp(15px, 4vw, 25px);
+      font-size: clamp(16px, 4vw, 20px);
+      font-weight: 600;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 2px 10px rgba(0,102,255,0.3);
+    }
+    
+    #messages { 
+      flex: 1; 
+      padding: clamp(12px, 3vw, 20px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex; 
+      flex-direction: column; 
+      gap: clamp(10px, 2.5vw, 15px);
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+    }
+    
+    .msg { 
+      max-width: min(85%, 600px);
+      padding: clamp(10px, 2.5vw, 14px) clamp(12px, 3vw, 18px);
+      border-radius: clamp(12px, 3vw, 18px);
+      line-height: 1.6;
+      word-break: break-word;
+      display: flex;
+      align-items: flex-start;
+      font-size: clamp(14px, 3.5vw, 16px);
+      animation: fadeIn 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .msg img.xio-icon { 
+      width: clamp(28px, 7vw, 36px);
+      height: clamp(28px, 7vw, 36px);
+      margin-right: clamp(6px, 1.5vw, 10px);
+      margin-top: 2px;
+      flex-shrink: 0;
+      border-radius: 50%;
+    }
+    
+    .msg .pattern-img { 
+      max-width: 100%;
+      max-height: min(250px, 50vh);
+      height: auto;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      margin-top: 10px;
+      display: block;
+      object-fit: contain;
+    }
+    
+    .user { 
+      align-self: flex-end; 
+      background: linear-gradient(135deg, #0066ff 0%, #4d94ff 100%);
+      color: white;
+      border-top-right-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,102,255,0.25);
+    }
+    
+    .xio { 
+      align-self: flex-start; 
+      background: #f5f7fa;
+      color: #1a1a2e;
+      border-top-left-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    
+    /* Search Bar Styles */
     .search-container { 
       display: flex; 
       width: 100%; 
-      padding: 10px; 
+      padding: clamp(8px, 2vw, 14px) clamp(10px, 3vw, 18px);
       background: #fff; 
-      border-top: 1px solid #ddd; 
+      border-top: 1px solid #e8e8e8;
       flex-shrink: 0; 
       align-items: center;
-      gap: 8px;
+      gap: clamp(6px, 1.5vw, 12px);
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
     }
+    
     #searchInput { 
       flex: 1; 
-      padding: 12px 15px; 
-      border: 1px solid #ddd; 
-      border-radius: 20px; 
-      font-size: 16px; 
+      padding: clamp(10px, 2.5vw, 14px) clamp(14px, 3.5vw, 20px);
+      border: 1.5px solid #e0e0e0;
+      border-radius: 25px;
+      font-size: clamp(14px, 3.5vw, 16px);
+      background: #f8f9fa;
+      transition: all 0.2s ease;
+      min-width: 0;
     }
+    
     #searchInput:focus { 
       outline: none; 
-      border-color: #0066ff; 
+      border-color: #0066ff;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(0,102,255,0.1);
     }
-    .photo-icon {
-      background: #0066ff;
+    
+    .send-icon, .photo-icon {
+      background: linear-gradient(135deg, #0066ff 0%, #0052cc 100%);
       color: white;
       border: none;
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
+      width: clamp(38px, 10vw, 48px);
+      height: clamp(38px, 10vw, 48px);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       flex-shrink: 0;
+      font-size: clamp(16px, 4vw, 20px);
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0,102,255,0.3);
     }
-    .photo-icon:hover {
-      background: #0055cc;
+    
+    .send-icon:hover, .photo-icon:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0,102,255,0.4);
     }
-    .send-icon {
-      background: #0066ff;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      flex-shrink: 0;
-      font-size: 18px;
-    }
-    .send-icon:hover {
-      background: #0055cc;
+    
+    .send-icon:active, .photo-icon:active {
+      transform: scale(0.95);
     }
     
     .loading-spinner { 
-      border: 3px solid rgba(0,0,0,0.1); 
-      border-radius: 50%; 
-      border-top: 3px solid #0066ff; 
-      width: 20px; 
-      height: 20px; 
-      animation: spin 1s linear infinite; 
-      margin: 0 auto; 
+      border: 3px solid rgba(0,0,0,0.08);
+      border-radius: 50%;
+      border-top: 3px solid #0066ff;
+      width: clamp(18px, 4.5vw, 24px);
+      height: clamp(18px, 4.5vw, 24px);
+      animation: spin 1s linear infinite;
     }
+    
     @keyframes spin { 
       0% { transform: rotate(0deg); } 
       100% { transform: rotate(360deg); } 
     }
     
-    @media screen and (max-width: 480px) {
-      .msg { max-width: 90%; }
-      #searchInput { padding: 10px 15px; }
+    /* Tablet */
+    @media screen and (min-width: 768px) {
+      .chat-container {
+        max-width: 800px;
+        margin: 0 auto;
+        height: 95vh;
+        height: 95dvh;
+        border-radius: 16px;
+        overflow: hidden;
+        margin-top: 2.5vh;
+      }
+    }
+    
+    /* Desktop */
+    @media screen and (min-width: 1200px) {
+      .chat-container {
+        max-width: 900px;
+      }
+      .msg {
+        max-width: 70%;
+      }
+    }
+    
+    /* Small phones */
+    @media screen and (max-width: 360px) {
+      .msg {
+        max-width: 92%;
+        padding: 8px 12px;
+      }
+    }
+    
+    /* Landscape mode on mobile */
+    @media screen and (max-height: 500px) and (orientation: landscape) {
+      .header {
+        padding: 8px 15px;
+        font-size: 14px;
+      }
+      .search-container {
+        padding: 6px 10px;
+      }
+      #messages {
+        padding: 10px;
+      }
+    }
+    
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #0f0f23;
+      }
+      .chat-container {
+        background: #1a1a2e;
+      }
+      .xio {
+        background: #2d2d44;
+        color: #e8e8f0;
+      }
+      .search-container {
+        background: #1a1a2e;
+        border-top-color: #2d2d44;
+      }
+      #searchInput {
+        background: #2d2d44;
+        border-color: #3d3d5c;
+        color: #e8e8f0;
+      }
+      #searchInput::placeholder {
+        color: #8888a0;
+      }
+      #searchInput:focus {
+        background: #252538;
+      }
+    }
+    
+    /* Safe area for notched devices */
+    @supports (padding: max(0px)) {
+      .header {
+        padding-top: max(clamp(12px, 3vw, 18px), env(safe-area-inset-top));
+        padding-left: max(clamp(15px, 4vw, 25px), env(safe-area-inset-left));
+        padding-right: max(clamp(15px, 4vw, 25px), env(safe-area-inset-right));
+      }
+      .search-container {
+        padding-bottom: max(clamp(8px, 2vw, 14px), env(safe-area-inset-bottom));
+        padding-left: max(clamp(10px, 3vw, 18px), env(safe-area-inset-left));
+        padding-right: max(clamp(10px, 3vw, 18px), env(safe-area-inset-right));
+      }
     }
   </style>
 </head>
@@ -98,11 +275,10 @@
     <div class="header">🤖 XIO Chat 3.3.4 -- AI Forex Assistant</div>
     <div id="messages"></div>
     
-    <!-- Combined Search Bar -->
     <div class="search-container">
-      <input type="text" id="searchInput" placeholder="Type your question...">
-      <button class="send-icon" onclick="sendMessage()">➤</button>
-      <div class="photo-icon" onclick="window.location.href='search.html'">📷</div>
+      <input type="text" id="searchInput" placeholder="Type your question..." autocomplete="off">
+      <button class="send-icon" onclick="sendMessage()" aria-label="Send message">➤</button>
+      <div class="photo-icon" onclick="window.location.href='search.html'" aria-label="Photo search">📷</div>
     </div>
   </div>
 
@@ -125,10 +301,15 @@
       await fetchTelegramMessages();
       setInterval(fetchTelegramMessages, 300000);
       
-      // Setup search input event listener
-      document.getElementById("searchInput").addEventListener("keypress", (e) => {
+      const searchInput = document.getElementById("searchInput");
+      searchInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") sendMessage();
       });
+      
+      // Auto-focus input on desktop
+      if (window.innerWidth > 768) {
+        searchInput.focus();
+      }
     }
 
     async function fetchTelegramMessages() {
@@ -178,7 +359,6 @@
         const doc = parser.parseFromString(html, 'text/html');
         const scriptContent = doc.querySelector('script').textContent;
         
-        // Extract responses object
         const responsesMatch = scriptContent.match(/const responses = ({[\s\S]*?});/);
         if (responsesMatch && responsesMatch[1]) {
           const responsesObj = new Function(`return ${responsesMatch[1]}`)();
@@ -195,13 +375,11 @@
           }
         }
         
-        // Extract synonyms object if defined separately
         const synonymsMatch = scriptContent.match(/const synonyms = ({[\s\S]*?});/);
         if (synonymsMatch && synonymsMatch[1]) {
           synonyms = new Function(`return ${synonymsMatch[1]}`)();
         }
         
-        // Also check for pattern synonyms in each response entry
         for (const [question, data] of Object.entries(responses)) {
           if (data.synonyms && Array.isArray(data.synonyms)) {
             data.synonyms.forEach(syn => {
@@ -213,9 +391,6 @@
             });
           }
         }
-        
-        console.log('Loaded QA pairs:', qaPairs.length);
-        console.log('Loaded synonyms:', synonyms);
         
       } catch (error) {
         console.error('Error loading xio2.html:', error);
@@ -235,27 +410,28 @@
         thinkingMsg.remove();
         const reply = await getAnswer(text.toLowerCase());
         addMessage("XIO", reply, "xio");
-      }, 1000);
+      }, 800);
 
       input.value = "";
+      input.focus();
     }
 
     function addMessage(sender, text, cls, returnElement = false) {
       const msg = document.createElement("div");
       msg.className = `msg ${cls}`;
       msg.innerHTML = cls === "xio" 
-        ? `<img src="xioicon.png" alt="XIO Icon" class="xio-icon"><div>${text}</div>`
-        : `<div><strong>${sender}:</strong> ${text}</div>`;
+        ? `<img src="xioicon.png" alt="XIO Icon" class="xio-icon" onerror="this.style.display='none'"><div>${text}</div>`
+        : `<div>${text}</div>`;
       
       document.getElementById("messages").appendChild(msg);
-      msg.scrollIntoView({ behavior: 'smooth' });
+      msg.scrollIntoView({ behavior: 'smooth', block: 'end' });
       return returnElement ? msg : null;
     }
 
     function normalizeText(text) {
       return text.toLowerCase()
-        .replace(/[^a-z0-9\s]/g, ' ')  // Remove special characters
-        .replace(/\s+/g, ' ')           // Normalize spaces
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
         .trim();
     }
 
@@ -264,13 +440,11 @@
       const normalized = normalizeText(text);
       variations.add(normalized);
       
-      // Add synonym variations
       const words = normalized.split(' ');
       words.forEach(word => {
         if (synonyms[word]) {
           synonyms[word].forEach(syn => {
             variations.add(syn);
-            // Also add combinations
             const newPhrase = normalized.replace(word, syn);
             variations.add(newPhrase);
           });
@@ -288,19 +462,16 @@
       
       let matches = 0;
       inputWords.forEach(inputWord => {
-        // Direct match
         if (questionWords.includes(inputWord)) {
           matches++;
           return;
         }
-        // Synonym match
         if (synonyms[inputWord]) {
           const hasSynonymMatch = synonyms[inputWord].some(syn => 
             questionWords.some(qw => qw.includes(syn) || syn.includes(qw))
           );
           if (hasSynonymMatch) matches += 0.8;
         }
-        // Partial match
         questionWords.forEach(qw => {
           if (qw.includes(inputWord) || inputWord.includes(qw)) {
             matches += 0.5;
@@ -318,7 +489,6 @@
 
       const lowerInput = userInput.toLowerCase();
       
-      // Check for signal requests first
       if (lowerInput.includes("technical signals")) {
         return await fetchSignalMessages(TECH_BOT_TOKEN, TECH_CHAT_ID, "technical");
       }
@@ -326,16 +496,13 @@
         return await fetchSignalMessages(FUND_BOT_TOKEN, FUND_CHAT_ID, "fundamental");
       }
 
-      // Get all variations of the input
       const inputVariations = getAllVariations(userInput);
       
-      // Try exact matches first with variations
       for (const variation of inputVariations) {
         const exactMatch = qaPairs.find(pair => pair.question === variation);
         if (exactMatch) return formatResponse(exactMatch);
       }
 
-      // Try synonym matching from each QA pair
       for (const pair of qaPairs) {
         if (pair.synonyms && pair.synonyms.length > 0) {
           const pairSynonyms = pair.synonyms.map(s => s.toLowerCase());
@@ -347,7 +514,6 @@
         }
       }
 
-      // Score-based matching
       let bestMatch = null;
       let bestScore = 0;
       const MATCH_THRESHOLD = 0.4;
@@ -355,13 +521,9 @@
       for (const pair of qaPairs) {
         const score = calculateMatchScore(userInput, pair.question);
         
-        // Also check against pair's synonyms
         if (pair.synonyms) {
           for (const syn of pair.synonyms) {
             const synScore = calculateMatchScore(userInput, syn);
-            if (synScore > score) {
-              // Use synonym score but keep the original pair
-            }
           }
         }
         
@@ -372,11 +534,9 @@
       }
 
       if (bestMatch) {
-        console.log(`Best match: "${bestMatch.question}" with score: ${bestScore.toFixed(2)}`);
         return formatResponse(bestMatch);
       }
 
-      // Telegram search fallback
       const telegramResults = searchTelegramMessages(userInput);
       if (telegramResults && telegramResults.length) {
         let telegramResponse = "I found relevant discussions:<br><br>";
@@ -389,7 +549,6 @@
         return telegramResponse;
       }
 
-      // Final fallback
       const availableTopics = [...new Set(qaPairs.map(pair => pair.question))].slice(0, 5).join(", ");
       return `I'm not sure about that. Try asking about: ${availableTopics} or check our Telegram group.`;
     }
@@ -415,21 +574,10 @@
       }
     }
 
-    function expandSynonyms(text) {
-      let result = text.toLowerCase();
-      for (const [base, alts] of Object.entries(synonyms)) {
-        for (const alt of alts) {
-          const regex = new RegExp(`\\b${alt}\\b`, 'gi');
-          result = result.replace(regex, base);
-        }
-      }
-      return result;
-    }
-
     function formatResponse(pair) {
       let response = pair.answer;
       if (pair.image) {
-        response += `<img src="${pair.image}" alt="${pair.question}" class="pattern-img">`;
+        response += `<img src="${pair.image}" alt="${pair.question}" class="pattern-img" loading="lazy">`;
       }
       if (pair.source === 'telegram') {
         response += `<br><small>Source: Telegram group</small>`;
@@ -437,7 +585,13 @@
       return response;
     }
 
-    // Initialize the application
+    // Handle visibility change to refresh data when user returns
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        fetchTelegramMessages();
+      }
+    });
+
     initialize();
   </script>
 </body>
