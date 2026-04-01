@@ -118,7 +118,7 @@
     let qaPairs = [];
     const responses = {};
     let telegramMessages = [];
-    const synonyms = {};
+    let synonyms = {};
 
     async function initialize() {
       await loadResponses();
@@ -177,8 +177,9 @@
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         const scriptContent = doc.querySelector('script').textContent;
-        const responsesMatch = scriptContent.match(/const responses = ({[\s\S]*?});/);
         
+        // Extract responses object
+        const responsesMatch = scriptContent.match(/const responses = ({[\s\S]*?});/);
         if (responsesMatch && responsesMatch[1]) {
           const responsesObj = new Function(`return ${responsesMatch[1]}`)();
           Object.assign(responses, responsesObj);
@@ -188,10 +189,34 @@
               question: question.toLowerCase(),
               answer: data.description,
               image: data.image || null,
-              source: 'local'
+              source: 'local',
+              synonyms: data.synonyms || []
             });
           }
         }
+        
+        // Extract synonyms object if defined separately
+        const synonymsMatch = scriptContent.match(/const synonyms = ({[\s\S]*?});/);
+        if (synonymsMatch && synonymsMatch[1]) {
+          synonyms = new Function(`return ${synonymsMatch[1]}`)();
+        }
+        
+        // Also check for pattern synonyms in each response entry
+        for (const [question, data] of Object.entries(responses)) {
+          if (data.synonyms && Array.isArray(data.synonyms)) {
+            data.synonyms.forEach(syn => {
+              const synLower = syn.toLowerCase();
+              if (!synonyms[synLower]) {
+                synonyms[synLower] = [];
+              }
+              synonyms[synLower].push(question.toLowerCase());
+            });
+          }
+        }
+        
+        console.log('Loaded QA pairs:', qaPairs.length);
+        console.log('Loaded synonyms:', synonyms);
+        
       } catch (error) {
         console.error('Error loading xio2.html:', error);
         addMessage("XIO", "I'm having trouble loading my knowledge base. Please try again later.", "xio");
@@ -227,13 +252,73 @@
       return returnElement ? msg : null;
     }
 
+    function normalizeText(text) {
+      return text.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')  // Remove special characters
+        .replace(/\s+/g, ' ')           // Normalize spaces
+        .trim();
+    }
+
+    function getAllVariations(text) {
+      const variations = new Set();
+      const normalized = normalizeText(text);
+      variations.add(normalized);
+      
+      // Add synonym variations
+      const words = normalized.split(' ');
+      words.forEach(word => {
+        if (synonyms[word]) {
+          synonyms[word].forEach(syn => {
+            variations.add(syn);
+            // Also add combinations
+            const newPhrase = normalized.replace(word, syn);
+            variations.add(newPhrase);
+          });
+        }
+      });
+      
+      return Array.from(variations);
+    }
+
+    function calculateMatchScore(input, question) {
+      const inputWords = normalizeText(input).split(' ').filter(w => w.length > 1);
+      const questionWords = normalizeText(question).split(' ').filter(w => w.length > 1);
+      
+      if (inputWords.length === 0 || questionWords.length === 0) return 0;
+      
+      let matches = 0;
+      inputWords.forEach(inputWord => {
+        // Direct match
+        if (questionWords.includes(inputWord)) {
+          matches++;
+          return;
+        }
+        // Synonym match
+        if (synonyms[inputWord]) {
+          const hasSynonymMatch = synonyms[inputWord].some(syn => 
+            questionWords.some(qw => qw.includes(syn) || syn.includes(qw))
+          );
+          if (hasSynonymMatch) matches += 0.8;
+        }
+        // Partial match
+        questionWords.forEach(qw => {
+          if (qw.includes(inputWord) || inputWord.includes(qw)) {
+            matches += 0.5;
+          }
+        });
+      });
+      
+      return matches / Math.max(inputWords.length, questionWords.length);
+    }
+
     async function getAnswer(userInput) {
       if (!qaPairs.length) {
         return "My knowledge base is still loading. Please try again in a moment.";
       }
 
-      // Check for signal requests first
       const lowerInput = userInput.toLowerCase();
+      
+      // Check for signal requests first
       if (lowerInput.includes("technical signals")) {
         return await fetchSignalMessages(TECH_BOT_TOKEN, TECH_CHAT_ID, "technical");
       }
@@ -241,24 +326,54 @@
         return await fetchSignalMessages(FUND_BOT_TOKEN, FUND_CHAT_ID, "fundamental");
       }
 
-      // Existing QA matching
-      const exactMatch = qaPairs.find(pair => pair.question === userInput);
-      if (exactMatch) return formatResponse(exactMatch);
+      // Get all variations of the input
+      const inputVariations = getAllVariations(userInput);
+      
+      // Try exact matches first with variations
+      for (const variation of inputVariations) {
+        const exactMatch = qaPairs.find(pair => pair.question === variation);
+        if (exactMatch) return formatResponse(exactMatch);
+      }
 
-      const expandedInput = expandSynonyms(userInput);
+      // Try synonym matching from each QA pair
       for (const pair of qaPairs) {
-        const expandedQuestion = expandSynonyms(pair.question);
-        if (expandedInput.includes(expandedQuestion) || expandedQuestion.includes(expandedInput)) {
-          return formatResponse(pair);
+        if (pair.synonyms && pair.synonyms.length > 0) {
+          const pairSynonyms = pair.synonyms.map(s => s.toLowerCase());
+          for (const syn of pairSynonyms) {
+            if (lowerInput.includes(syn) || syn.includes(lowerInput)) {
+              return formatResponse(pair);
+            }
+          }
+        }
+      }
+
+      // Score-based matching
+      let bestMatch = null;
+      let bestScore = 0;
+      const MATCH_THRESHOLD = 0.4;
+
+      for (const pair of qaPairs) {
+        const score = calculateMatchScore(userInput, pair.question);
+        
+        // Also check against pair's synonyms
+        if (pair.synonyms) {
+          for (const syn of pair.synonyms) {
+            const synScore = calculateMatchScore(userInput, syn);
+            if (synScore > score) {
+              // Use synonym score but keep the original pair
+            }
+          }
         }
         
-        const inputWords = expandedInput.split(/\s+/);
-        const questionWords = expandedQuestion.split(/\s+/);
-        const matchScore = inputWords.filter(word => questionWords.includes(word)).length;
-        
-        if (matchScore >= Math.min(2, questionWords.length)) {
-          return formatResponse(pair);
+        if (score > bestScore && score >= MATCH_THRESHOLD) {
+          bestScore = score;
+          bestMatch = pair;
         }
+      }
+
+      if (bestMatch) {
+        console.log(`Best match: "${bestMatch.question}" with score: ${bestScore.toFixed(2)}`);
+        return formatResponse(bestMatch);
       }
 
       // Telegram search fallback
